@@ -1,7 +1,7 @@
 
 import math
 import random
-import title_particle
+import etccode.title_particle as title_particle
 
 import pygame
 pygame.init()
@@ -11,6 +11,7 @@ clock = pygame.time.Clock()
 running = True
 framecount = 0
 
+save = open("saves/save0.cobl","w+")
 
 def font(text:str,size:int) -> pygame.Surface:
     return pygame.font.SysFont("xanhmono",size).render(text,False,(0,0,0))
@@ -29,21 +30,50 @@ def init_title():
         ))
 
 class TitleButton:
-    def __init__(self,text:str):
+    def __init__(self,text:str,selectable:bool = True):
         self.text = text
+        self.selectable = selectable
+class TitleMenu:
+    def __init__(self,buttons:dict,logo:bool=False):
+        self.buttons = buttons
+        self.logo = logo
 
-def tb_settings():
-    print("settings openened")
-def tb_quit():
+title_selbutton = 0
+title_menu = 0
+title_logo = True
+
+def menu_change(menu:int):
+    global title_selbutton, title_menu
+    title_selbutton = 0
+    title_menu = menu
+
+def tb0_settings():
+    print("settings opened")
+    global title_menu
+    menu_change(1)
+def tb0_quit():
     print("quitted by title options")
     global running
     running = False
+def tb1_back():
+    print("backed to main menu")
+    global title_menu
+    menu_change(0)
 
-title_buttons = {
-    TitleButton("Settings"):tb_settings,
-    TitleButton("Quit"):tb_quit
-}
-title_selbutton = 0
+title_menus = [
+    TitleMenu(   # main menu
+        {
+            TitleButton("Settings"):tb0_settings,
+            TitleButton("Quit"):tb0_quit
+        },True
+    ),TitleMenu( # settings
+        {
+            TitleButton("Back"):tb1_back
+        }
+    )
+]
+
+title_buttons = {}
 
 def draw_title():
     # make da white screen
@@ -60,27 +90,42 @@ def draw_title():
         )
 
     # make da text
-    screen.blit(font("CANVAS",80),surf_cent(font("CANVAS",80),(math.sin(framecount/40)*6+350,math.sin(framecount/30)*2+50)))
-    screen.blit(font("OF",80),surf_cent(font("OF",80),(math.sin(framecount/30)*2+350,math.sin(framecount/40)*6+150)))
-    screen.blit(font("BANANEL",80),surf_cent(font("BANANEL",80),(math.cos(framecount/40)*6+350,math.cos(framecount/20)*8+250)))
+    if title_logo:
+        screen.blit(font("CANVAS",80),surf_cent(font("CANVAS",80),(math.sin(framecount/40)*6+350,math.sin(framecount/30)*2+50)))
+        screen.blit(font("OF",80),surf_cent(font("OF",80),(math.sin(framecount/30)*2+350,math.sin(framecount/40)*6+150)))
+        screen.blit(font("BANANEL",80),surf_cent(font("BANANEL",80),(math.cos(framecount/40)*6+350,math.cos(framecount/20)*8+250)))
 
     # make da buttons
-    i = 0
-    for button in title_buttons:
-
-        if i == title_selbutton:
-            screen.blit(
-                font(f">> {button.text} <<",40),
-                surf_cent(font(f">> {button.text} <<",40),(350,400+(i*50) ))
-            )
-        else:
-            screen.blit(
-                font(f"{button.text}",40),
-                surf_cent(font(f"{button.text}",40),(350,400+(i*50) ))
-                
-            )
-
-        i += 1
+    if title_logo:
+        i = 0
+        for button in title_buttons:
+            if i == title_selbutton and button.selectable:
+                screen.blit(
+                    font(f">> {button.text} <<",40),
+                    surf_cent(font(f">> {button.text} <<",40),(350,400+(i*50) ))
+                )
+            else:
+                screen.blit(
+                    font(f"{button.text}",40),
+                    surf_cent(font(f"{button.text}",40),(350,400+(i*50) ))
+                    
+                )
+            i += 1
+    else:
+        i = 0
+        for button in title_buttons:
+            if i == title_selbutton and button.selectable:
+                screen.blit(
+                    font(f">> {button.text} <<",40),
+                    surf_cent(font(f">> {button.text} <<",40),(350,20+(i*50) ))
+                )
+            else:
+                screen.blit(
+                    font(f"{button.text}",40),
+                    surf_cent(font(f"{button.text}",40),(350,20+(i*50) ))
+                    
+                )
+            i += 1
 
 init_title()
 
@@ -94,16 +139,22 @@ while running:
         elif event.type == pygame.MOUSEWHEEL:
             if event.y > 0:   # scroll up
                 title_selbutton -= 1
+                while not list(title_buttons.keys())[title_selbutton].selectable:
+                    title_selbutton -= 1
             elif event.y < 0: # scroll down
                 title_selbutton += 1
+                while not list(title_buttons.keys())[title_selbutton].selectable:
+                    title_selbutton += 1
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == pygame.BUTTON_LEFT:
                 list(title_buttons.values())[title_selbutton]()
 
         elif event.type == pygame.KEYDOWN:
             pass
-                
-        
+
+    title_buttons = title_menus[title_menu].buttons
+    title_logo = title_menus[title_menu].logo
+
     title_selbutton = title_selbutton % len(title_buttons)
 
     draw_title()    
